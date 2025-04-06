@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shadow Plebe RPG</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+    }
+    canvas {
+      display: block;
+      margin: auto;
+      image-rendering: pixelated;
+    }
+    #loading {
+      color: white;
+      text-align: center;
+      font-family: monospace;
+      margin-top: 20px;
+    }
+    #dialogue-box {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 720px;
+      padding: 10px;
+      background-color: rgba(30, 30, 30, 0.9);
+      border: 2px solid olive;
+      color: #e0e0c0;
+      font-family: monospace;
+      font-size: 16px;
+      display: none;
+    }
+    #dialogue-title {
+      font-weight: bold;
+      color: khaki;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+<div id="loading">Loading game assets... Please wait.</div>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<div id="dialogue-box">
+  <div id="dialogue-title">[SFC HONOR NCO]</div>
+  <div id="dialogue-text">YOU'RE OUT OF UNIFORM, PLEBE. BACK TO YOUR ROOM. NOW.</div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const mapImg = new Image();
+  const spriteSheet = new Image();
+  mapImg.src = 'central_area_map.png';
+  spriteSheet.src = 'plebe_sprite_sheet.png';
+
+  let playerX = 400, playerY = 300;
+  const speed = 4;
+  let direction = 0;
+  let frame = 0;
+  let moving = false;
+  const keys = {};
+
+  const collisionTiles = [
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,1,1,1,0,0,1,1,1,0],
+    [0,1,0,0,0,0,0,0,1,0],
+    [0,1,0,1,1,1,1,0,1,0],
+    [0,0,0,0,0,0,1,0,0,0],
+    [0,1,1,1,1,0,1,1,1,0],
+    [0,0,0,0,0,0,0,0,1,0],
+    [0,1,1,0,1,1,1,0,1,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,1,1,1,0,0,1,1,1,0]
+  ];
+  const tileSize = 64;
+
+  document.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
+  });
+  document.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
+    moving = false;
+    frame = 0;
+  });
+
+  function canMove(x, y) {
+    const tileX = Math.floor(x / tileSize);
+    const tileY = Math.floor(y / tileSize);
+    return (
+      tileY >= 0 && tileY < collisionTiles.length &&
+      tileX >= 0 && tileX < collisionTiles[0].length &&
+      collisionTiles[tileY][tileX] === 0
+    );
+  }
+
+  function update() {
+    moving = false;
+    let newX = playerX;
+    let newY = playerY;
+    if (keys['ArrowUp']) {
+      newY -= speed;
+      direction = 3;
+      moving = true;
+    }
+    if (keys['ArrowDown']) {
+      newY += speed;
+      direction = 0;
+      moving = true;
+    }
+    if (keys['ArrowLeft']) {
+      newX -= speed;
+      direction = 1;
+      moving = true;
+    }
+    if (keys['ArrowRight']) {
+      newX += speed;
+      direction = 2;
+      moving = true;
+    }
+    if (moving) {
+      frame = (frame + 1) % 4;
+      if (canMove(newX, newY)) {
+        playerX = newX;
+        playerY = newY;
+      }
+    } else {
+      frame = 0;
+    }
+
+    if (playerX > 300 && playerX < 500 && playerY > 200 && playerY < 300) {
+      document.getElementById('dialogue-box').style.display = 'block';
+    } else {
+      document.getElementById('dialogue-box').style.display = 'none';
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(spriteSheet, frame * 64, direction * 64, 64, 64, playerX - 32, playerY - 32, 64, 64);
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  let assetsLoaded = 0;
+  mapImg.onload = () => {
+    assetsLoaded++;
+    if (assetsLoaded === 2) {
+      document.getElementById('loading').style.display = 'none';
+      gameLoop();
+    }
+  };
+  spriteSheet.onload = () => {
+    assetsLoaded++;
+    if (assetsLoaded === 2) {
+      document.getElementById('loading').style.display = 'none';
+      gameLoop();
+    }
+  };
+});
+</script>
+</body>
+</html>
